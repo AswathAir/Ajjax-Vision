@@ -1,0 +1,154 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2709
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 import RPi.GPIO as GPIO\
+import time\
+\
+# Set GPIO mode to BCM\
+GPIO.setmode(GPIO.BCM)\
+\
+# Define the GPIO pin connected to the relay module\
+RELAY_PIN = 18  # Change this to the actual GPIO pin number\
+\
+# Set up the relay pin as an output\
+GPIO.setup(RELAY_PIN, GPIO.OUT)\
+\
+def unlock_door():\
+    GPIO.output(RELAY_PIN, GPIO.HIGH)\
+    print("Door Unlocked")\
+    time.sleep(2)  # Keep the door unlocked for 2 seconds\
+    GPIO.output(RELAY_PIN, GPIO.LOW)\
+    print("Door Locked")\
+\
+try:\
+    while True:\
+        action = input("Enter 'o' to unlock the door, 'c' to quit: ")\
+        \
+        if action == 'o':\
+            unlock_door()\
+        elif action == 'c':\
+            break\
+        else:\
+            print("Invalid input. Try again.")\
+            \
+except KeyboardInterrupt:\
+    pass\
+\
+# Clean up GPIO settings\
+GPIO.cleanup()\
+\
+\
+\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\
+import cv2\
+import numpy as np\
+import face_recognition\
+import os\
+from datetime import datetime\
+import firebase_admin\
+from firebase_admin import credentials, storage\
+\
+# Initialize Firebase Admin SDK\
+cred = credentials.Certificate("survkey.json")\
+firebase_admin.initialize_app(cred, \{'storageBucket': 'surveillance-f1d63.appspot.com'\})\
+\
+# Load known images and their encodings\
+path = 'knownimg'\
+images = []\
+classNames = []\
+myList = os.listdir(path)\
+for cl in myList:\
+    curImg = cv2.imread(f'\{path\}/\{cl\}')\
+    images.append(curImg)\
+    classNames.append(os.path.splitext(cl)[0])\
+\
+def findEncodings(images):\
+    encodeList = []\
+    for img in images:\
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)\
+        \
+        # Resize the image for better face detection\
+        small_img = cv2.resize(img, (0, 0), fx=0.25, fy=0.25)\
+        \
+        # Detect faces\
+        face_locations = face_recognition.face_locations(small_img)\
+        \
+        if face_locations:\
+            encode = face_recognition.face_encodings(small_img, face_locations)[0]\
+            encodeList.append(encode)\
+        else:\
+            print("No faces found in image:", img)\
+    return encodeList\
+\
+encodeListKnown = findEncodings(images)\
+print('Encoding Complete')\
+\
+cap = cv2.VideoCapture(0)\
+\
+# Initialize a counter for unknown person instances\
+unknown_person_counter = 1\
+\
+while True:\
+    success, img = cap.read()\
+    imgS = cv2.resize(img, (0, 0), None, 0.25, 0.25)\
+    imgS = cv2.cvtColor(imgS, cv2.COLOR_BGR2RGB)\
+\
+    facesCurFrame = face_recognition.face_locations(imgS)\
+    encodesCurFrame = face_recognition.face_encodings(imgS, facesCurFrame)\
+\
+    for encodeFace, faceLoc in zip(encodesCurFrame, facesCurFrame):\
+        matches = face_recognition.compare_faces(encodeListKnown, encodeFace)\
+        faceDis = face_recognition.face_distance(encodeListKnown, encodeFace)\
+        matchIndex = np.argmin(faceDis)\
+        \
+        name = "Unknown"\
+        if matches[matchIndex]:\
+            name = classNames[matchIndex].upper()\
+            y1, x2, y2, x1 = faceLoc\
+            y1, x2, y2, x1 = y1 * 4, x2 * 4, y2 * 4, x1 * 4\
+            cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)\
+            cv2.rectangle(img, (x1, y2 - 35), (x2, y2), (0, 255, 0), cv2.FILLED)\
+            cv2.putText(img, name, (x1 + 6, y2 - 6), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255), 2)\
+        else:\
+            y1, x2, y2, x1 = faceLoc\
+            y1, x2, y2, x1 = y1 * 4, x2 * 4, y2 * 4, x1 * 4\
+            cv2.rectangle(img, (x1, y1), (x2, y2), (0, 0, 255), 2)\
+            cv2.rectangle(img, (x1, y2 - 35), (x2, y2), (0, 0, 255), cv2.FILLED)\
+            cv2.putText(img, "Unknown", (x1 + 6, y2 - 6), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255), 2)\
+\
+            # Record a video clip when an unknown person is detected\
+            video_name = f'unknown_person_\{unknown_person_counter\}.avi'\
+            video_writer = cv2.VideoWriter(video_name, cv2.VideoWriter_fourcc(*'XVID'), 20, (img.shape[1], img.shape[0]))\
+            unknown_person_counter += 1\
+\
+            # Record frames for a few seconds\
+            for _ in range(100):  # Adjust the number of frames to record\
+                video_writer.write(img)\
+                success, img = cap.read()\
+\
+            video_writer.release()\
+\
+            # Upload the recorded video to Firebase Cloud Storage\
+            bucket = storage.bucket()\
+            blob = bucket.blob('unknown_videos/' + video_name)\
+            blob.upload_from_filename(video_name)\
+            print(f"Unknown person video \{video_name\} uploaded to Firebase Storage")\
+\
+    cv2.imshow('Webcam', img)\
+    if cv2.waitKey(1) & 0xFF == ord('q'):\
+        break\
+\
+# Clean up\
+cap.release()\
+cv2.destroyAllWindows()\
+\
+\
+\
+\
+\
+\
+\
+}
