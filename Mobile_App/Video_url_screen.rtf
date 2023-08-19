@@ -1,0 +1,86 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2709
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fnil\fcharset0 HelveticaNeue;\f1\fnil\fcharset0 HelveticaNeue-Italic;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\deftab560
+\pard\pardeftab560\slleading20\pardirnatural\partightenfactor0
+
+\f0\fs26 \cf0 import 'package:flutter/material.dart';\
+import 'package:firebase_core/firebase_core.dart';\
+import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;\
+\
+Future<String?> fetchVideoUrl() async \{\
+  try \{\
+    // Replace 'videos/video.mp4' with the path to your video in Firebase Storage\
+    final ref = firebase_storage.FirebaseStorage.
+\f1\i instance
+\f0\i0 .ref('unknown_videos/unknown_person_1.avi');\
+    final url = await ref.getDownloadURL();\
+    return url;\
+  \} catch (e) \{\
+    print('Error fetching video URL: $e');\
+    return null;\
+  \}\
+\}\
+Future<String?> fetchVideoUrls(String path) async \{\
+  try \{\
+    // Replace 'videos/video.mp4' with the path to your video in Firebase Storage\
+    final ref = firebase_storage.FirebaseStorage.
+\f1\i instance
+\f0\i0 .ref(path);\
+    final url = await ref.getDownloadURL();\
+    return url;\
+  \} catch (e) \{\
+    print('Error fetching video URL: $e');\
+    return null;\
+  \}\
+\}\
+\
+class VideoUrlScreen extends StatefulWidget \{\
+  @override\
+  _VideoUrlScreenState createState() => _VideoUrlScreenState();\
+\}\
+\
+class _VideoUrlScreenState extends State<VideoUrlScreen> \{\
+\
+  Future<String?> fetchVideoUrl() async \{\
+    try \{\
+      // Replace 'videos/video.mp4' with the path to your video in Firebase Storage\
+      final ref = firebase_storage.FirebaseStorage.
+\f1\i instance
+\f0\i0 .ref('unknown_videos/unknown_person_1.avi');\
+      final url = await ref.getDownloadURL();\
+      return url;\
+    \} catch (e) \{\
+      print('Error fetching video URL: $e');\
+      return null;\
+    \}\
+  \}\
+\
+  @override\
+  Widget build(BuildContext context) \{\
+    return Scaffold(\
+      appBar: AppBar(title: Text('Video URL')),\
+      body: Center(\
+        child: FutureBuilder<String?>(\
+          future: fetchVideoUrl(),\
+          builder: (context, snapshot) \{\
+            if (snapshot.connectionState == ConnectionState.waiting) \{\
+              return CircularProgressIndicator();\
+            \} else if (snapshot.hasError || snapshot.data == null) \{\
+              return Text('Error fetching video URL');\
+            \} else \{\
+              return Text(\
+                'Video URL:\\n$\{snapshot.data!\}',\
+                textAlign: TextAlign.center,\
+                style: TextStyle(fontSize: 18),\
+              );\
+            \}\
+          \},\
+        ),\
+      ),\
+    );\
+  \}\
+\}\
+}
