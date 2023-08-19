@@ -1,0 +1,369 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2709
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fnil\fcharset0 HelveticaNeue;\f1\fnil\fcharset0 HelveticaNeue-Italic;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww28600\viewh17520\viewkind0
+\deftab560
+\pard\pardeftab560\slleading20\pardirnatural\partightenfactor0
+
+\f0\fs26 \cf0 import 'package:fancy_text_reveal/fancy_text_reveal.dart';\
+import 'package:firebase_auth/firebase_auth.dart';\
+import 'package:firebase_database/firebase_database.dart';\
+\
+import 'package:flutter/cupertino.dart';\
+import 'package:flutter/material.dart';\
+import 'package:firebase_core/firebase_core.dart';\
+import 'package:flutter_native_splash/flutter_native_splash.dart';\
+import 'package:ssurveillance/VideoUrlScreen.dart';\
+import 'firebase_options.dart';\
+import 'package:ssurveillance/Signup.dart';\
+import 'package:firebase_core/firebase_core.dart';\
+import 'Home.dart';\
+import 'package:google_nav_bar/google_nav_bar.dart';\
+import 'package:firebase_core/firebase_core.dart';\
+import 'package:google_sign_in/google_sign_in.dart';\
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';\
+import 'package:permission_handler/permission_handler.dart';\
+// ...\
+\
+User? user=FirebaseAuth.
+\f1\i instance
+\f0\i0 .currentUser;\
+final FirebaseAuth auth = FirebaseAuth.
+\f1\i instance
+\f0\i0 ;\
+Future<void> gSignup(BuildContext context) async \{\
+\
+  final GoogleSignIn googleSignIn = GoogleSignIn();\
+  final GoogleSignInAccount? googleSignInAccount = await googleSignIn.signIn();\
+  if (googleSignInAccount != null) \{\
+    final GoogleSignInAuthentication googleSignInAuthentication =\
+    await googleSignInAccount.authentication;\
+    final AuthCredential authCredential = GoogleAuthProvider.
+\f1\i credential
+\f0\i0 (\
+        idToken: googleSignInAuthentication.idToken,\
+        accessToken: googleSignInAuthentication.accessToken);\
+\
+    // Getting users credential\
+    UserCredential result = await auth.signInWithCredential(authCredential);\
+    User? user = result.user;\
+\
+    if (result != null) \{\
+      Navigator.
+\f1\i pushReplacement
+\f0\i0 (\
+          context, MaterialPageRoute(builder: (context) => const Home()));\
+    \} // if result not null we simply call the MaterialpageRoute,\
+    // for go to the HomePage screen\
+  \}\
+\}\
+Future<void> main() async \{\
+\
+  WidgetsFlutterBinding.
+\f1\i ensureInitialized
+\f0\i0 ();\
+  Future.delayed(Duration(seconds: 4));\
+  FlutterNativeSplash.
+\f1\i remove
+\f0\i0 ();\
+  String? url=await fetchVideoUrl();\
+\
+// ...\
+\
+  await Firebase.
+\f1\i initializeApp
+\f0\i0 (\
+    options: DefaultFirebaseOptions.
+\f1\i currentPlatform
+\f0\i0 ,\
+  );\
+// function to implement the google signin\
+\
+// creating firebase instance\
+\
+\
+\
+\
+\
+\
+\
+  runApp(MaterialApp(\
+    home:user==null?const Login():const Home(),\
+  ));\
+\
+\}\
+\
+Future<void> checkPermission() async \{\
+  var mic=await Permission.
+\f1\i microphone
+\f0\i0 .status;\
+  if(! mic.isGranted)\{\
+    Permission.
+\f1\i microphone
+\f0\i0 .request();\
+  \}\
+\
+  if(await Permission.
+\f1\i sensors
+\f0\i0 .status.isDenied) \{\
+    Permission.
+\f1\i sensors
+\f0\i0 .request();\
+  \}\
+\
+  if(await Permission.
+\f1\i manageExternalStorage
+\f0\i0 .isDenied)\{\
+    Permission.
+\f1\i manageExternalStorage
+\f0\i0 .request();\
+  \}\
+\
+\}\
+extension DarkMode on BuildContext \{\
+  
+\f1\i /// is dark mode currently enabled?\
+  
+\f0\i0 bool get isDarkMode \{\
+    final brightness = MediaQuery.
+\f1\i of
+\f0\i0 (this).platformBrightness;\
+    return brightness == Brightness.dark;\
+  \}\
+\}\
+\
+class Login extends StatefulWidget \{\
+  const Login(\{Key? key\}) : super(key: key);\
+\
+  @override\
+  State<Login> createState() => _LoginState();\
+\}\
+\
+class _LoginState extends State<Login> \{\
+  @override\
+\
+  Widget build(BuildContext context) \{\
+    TextEditingController email=TextEditingController();\
+    TextEditingController pass=TextEditingController();\
+    double width_=MediaQuery.
+\f1\i of
+\f0\i0 (context).size.width;\
+    FirebaseAuth auth=FirebaseAuth.
+\f1\i instance
+\f0\i0 ;\
+\
+    checkPermission();\
+    Future<void> signIn() async \{\
+\
+  try \{\
+\
+  await auth.signInWithEmailAndPassword(email: email.text, password: pass.text);\
+  \}\
+  catch(e)\{\
+    ScaffoldMessenger.
+\f1\i of
+\f0\i0 (context).showSnackBar(SnackBar(content: Text(e.toString())));\
+  \}\
+\
+    \}\
+    if(width_<1000)\{\
+      width_=MediaQuery.
+\f1\i of
+\f0\i0 (context).size.width-30;\
+    \}\
+    else\{\
+      width_=400;\
+    \}\
+\
+    return  Scaffold(\
+      drawerEnableOpenDragGesture: false,\
+\
+      body:  Center(\
+        child: Container(\
+          decoration: const BoxDecoration(\
+            image:DecorationImage(\
+              image: AssetImage("Assets/img.jpeg"),\
+              fit: BoxFit.cover,\
+            ),\
+          ),\
+          width: MediaQuery.
+\f1\i of
+\f0\i0 (context).size.width,\
+          height: MediaQuery.
+\f1\i of
+\f0\i0 (context).size.height,\
+          child:Center(\
+            child: Padding(\
+              padding: EdgeInsets.symmetric(horizontal: 0),\
+              child:ListView(\
+                children: [\
+                  SizedBox(height:20),\
+                  Container(width:200,height:200,child: Image.asset("Assets/logo.png")),\
+                  SizedBox(height:26),\
+                  Padding(\
+                    padding: const EdgeInsets.all(8.0),\
+                    child: Align(\
+                      alignment: Alignment.
+\f1\i bottomCenter
+\f0\i0 ,\
+                      child:  Container(\
+                        width:MediaQuery.
+\f1\i of
+\f0\i0 (context).size.width,\
+                        height:MediaQuery.
+\f1\i of
+\f0\i0 (context).size.height/1.5,\
+                        decoration: BoxDecoration(\
+                          color: context.isDarkMode ? Colors.
+\f1\i black87
+\f0\i0 : Colors.
+\f1\i white
+\f0\i0 ,\
+                          borderRadius: BorderRadius.all(Radius.circular(6)),\
+\
+\
+                        ),\
+                        child: Padding(\
+                          padding: const EdgeInsets.all(18.0),\
+                          child: ListView(\
+                            children: [\
+                              FancyTextReveal(\
+                                  child: Text("Stay safe, we've got you back.",\
+                                    style:TextStyle(letterSpacing: 1.5,fontSize: 32,fontWeight: FontWeight.
+\f1\i w500
+\f0\i0 ,color:Colors.
+\f1\i indigo
+\f0\i0 ) ,)),\
+                              SizedBox(height:56),\
+                              TextField(\
+                                decoration: InputDecoration(\
+                                  labelText: "Username",\
+                                  labelStyle: TextStyle(color: context.isDarkMode ? Colors.
+\f1\i white
+\f0\i0 : Colors.
+\f1\i black87
+\f0\i0 ,fontSize: 20),\
+                                  fillColor:  context.isDarkMode ? Colors.
+\f1\i black87
+\f0\i0 : Colors.
+\f1\i white
+\f0\i0 ,\
+                                  focusedBorder: UnderlineInputBorder(\
+                                    borderSide: BorderSide(color: context.isDarkMode ? Colors.
+\f1\i white
+\f0\i0 : Colors.
+\f1\i black87
+\f0\i0 ),\
+                                  ),\
+                                  enabledBorder: UnderlineInputBorder(\
+                                    borderSide: BorderSide(color: context.isDarkMode ? Colors.
+\f1\i white
+\f0\i0 : Colors.
+\f1\i black87
+\f0\i0 ),\
+                                  ),\
+                                ),\
+                              ),\
+                              SizedBox(height:26),\
+                              TextField(\
+                                decoration: InputDecoration(\
+                                  labelText: "Password",\
+                                  labelStyle: TextStyle(color: context.isDarkMode ? Colors.
+\f1\i white
+\f0\i0 : Colors.
+\f1\i black87
+\f0\i0 ,fontSize: 20),\
+                                  fillColor:  context.isDarkMode ? Colors.
+\f1\i black87
+\f0\i0 : Colors.
+\f1\i white
+\f0\i0 ,\
+                                  focusedBorder: UnderlineInputBorder(\
+                                    borderSide: BorderSide(color: context.isDarkMode ? Colors.
+\f1\i white
+\f0\i0 : Colors.
+\f1\i black87
+\f0\i0 ),\
+                                  ),\
+                                  enabledBorder: UnderlineInputBorder(\
+                                    borderSide: BorderSide(color: context.isDarkMode ? Colors.
+\f1\i white
+\f0\i0 : Colors.
+\f1\i black87
+\f0\i0 ),\
+                                  ),\
+                                ),\
+                              ),\
+                              SizedBox(height:30),\
+                              Container(\
+\
+                                height: 50,\
+\
+                                child: MaterialButton(\
+                                  padding: EdgeInsets.symmetric(horizontal: 60),\
+                                  color: Colors.
+\f1\i blue
+\f0\i0 ,\
+                                  onPressed: ()\{\
+                                    signIn();\
+                                    ScaffoldMessenger.
+\f1\i of
+\f0\i0 (context).showSnackBar(SnackBar(content:Text("Logged in:)"+FirebaseAuth.
+\f1\i instance
+\f0\i0 .currentUser!.email.toString() )));\
+                                  \},\
+                                  child: Text("Sign In",style: TextStyle(color: context.isDarkMode ? Colors.
+\f1\i black87
+\f0\i0 : Colors.
+\f1\i white
+\f0\i0 ,letterSpacing: 3,fontSize: 20,fontWeight: FontWeight.
+\f1\i w500
+\f0\i0 ),),\
+\
+                                ),\
+                              ),\
+                              SizedBox(height:30),\
+                              Container(\
+\
+                                height: 50,\
+\
+                                child:IconButton(\
+                                  iconSize: 46,\
+                                  color: Colors.
+\f1\i blue
+\f0\i0 ,\
+                                  icon: Icon(MdiIcons.
+\f1\i fromString
+\f0\i0 ("google")), onPressed: () \{\
+                                  gSignup(context);\
+                                \},\
+\
+\
+                                ),\
+                              ),\
+                              const SizedBox(height:20),\
+                              TextButton(onPressed: ()\{\
+                 Navigator.
+\f1\i push
+\f0\i0 (context, MaterialPageRoute(builder: (context)=>const Signup()));\
+\
+                              \}, child: Text("Create an Account")),\
+                            ],\
+                          ),\
+                        ),\
+\
+                      ),\
+                    ),\
+                  ),\
+\
+                ],\
+              ),\
+            ),\
+          ) ,\
+        ),\
+      ),\
+    );\
+  \}\
+\}\
+}
